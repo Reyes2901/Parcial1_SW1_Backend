@@ -18,8 +18,12 @@ npm-debug.log*
 # --- Sistema operativo ---
 .DS_Store
 Thumbs.db
+# --- Test scratch (salidas de test runs, no deben versionarse) ---
+scratch/
+**/target/
+*.class
+vitest.config.ts
 
-reference-project/
 AGENTS.md 
 prompt.md 
 

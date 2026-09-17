@@ -38,8 +38,8 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      #- name: Verify reference Spring Boot project compilation
-      #  run: cd reference-project && mvn -q compile
+      - name: Verify reference Spring Boot project compilation
+        run: cd reference-project && mvn -q compile
 
       - name: Run Vitest Suite (Unit, integration, generated Spring Boot compile)
         run: npm run test
