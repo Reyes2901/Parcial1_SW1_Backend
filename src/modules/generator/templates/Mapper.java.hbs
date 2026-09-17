@@ -1,0 +1,41 @@
+package com.example.{{packageName}}.mapper;
+
+import com.example.{{packageName}}.dto.{{className}}DTO;
+import com.example.{{packageName}}.entity.{{className}};
+import org.springframework.stereotype.Component;
+
+@Component
+public class {{className}}Mapper {
+
+    public {{className}}DTO toDto({{className}} entity) {
+        if (entity == null) return null;
+
+        {{className}}DTO dto = new {{className}}DTO();
+        dto.set{{idPascalFieldName}}(entity.get{{idPascalFieldName}}());
+{{#each attributes}}
+        dto.set{{pascalFieldName}}(entity.get{{pascalFieldName}}());
+{{/each}}
+        return dto;
+    }
+
+    public {{className}} toEntity({{className}}DTO dto) {
+        if (dto == null) return null;
+
+        {{className}} entity = new {{className}}();
+        entity.set{{idPascalFieldName}}(dto.get{{idPascalFieldName}}());
+{{#each attributes}}
+        entity.set{{pascalFieldName}}(dto.get{{pascalFieldName}}());
+{{/each}}
+        return entity;
+    }
+
+    public void updateEntityFromDto({{className}}DTO dto, {{className}} entity) {
+        if (dto == null || entity == null) return;
+
+{{#each attributes}}
+        if (dto.get{{pascalFieldName}}() != null) {
+            entity.set{{pascalFieldName}}(dto.get{{pascalFieldName}}());
+        }
+{{/each}}
+    }
+}

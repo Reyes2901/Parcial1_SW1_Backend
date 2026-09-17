@@ -1,0 +1,25 @@
+package com.example.{{packageName}}.dto;
+
+import lombok.*;
+{{#if imports}}
+{{#each imports}}
+import {{this}};
+{{/each}}
+{{/if}}
+{{#if idTypeImport}}
+import {{idTypeImport}};
+{{/if}}
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class {{className}}DTO {
+
+    private {{idJavaType}} {{idFieldName}};
+
+{{#each attributes}}
+    private {{javaType}} {{fieldName}};
+{{/each}}
+}

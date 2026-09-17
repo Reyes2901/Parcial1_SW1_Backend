@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  googleId  String?  @unique @map("google_id")
+  email     String   @unique
+  name      String
+  password  String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ownedProjects   Project[]        @relation("ProjectOwner")
+  memberships     ProjectMember[]
+  invitations     Invitation[]     @relation("UserInvitations")
+  diagramVersions DiagramVersion[]
+  classLocks      ClassLock[]
+  aiConversations AiConversation[]
+  generations     Generation[]
+
+  @@map("users")
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id])
+  members     ProjectMember[]
+  diagrams    Diagram[]
+  invitations Invitation[]
+
+  @@map("projects")
+}
+
+enum ProjectRole {
+  owner
+  editor
+  viewer
+}
+
+model ProjectMember {
+  id        String      @id @default(uuid())
+  projectId String      @map("project_id")
+  userId    String      @map("user_id")
+  role      ProjectRole
+  joinedAt  DateTime    @default(now()) @map("joined_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model Invitation {
+  id        String      @id @default(uuid())
+  projectId String      @map("project_id")
+  token     String      @unique
+  role      ProjectRole
+  invitedBy String      @map("invited_by")
+  expiresAt DateTime    @map("expires_at")
+  revoked   Boolean     @default(false)
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inviter User    @relation("UserInvitations", fields: [invitedBy], references: [id])
+
+  @@map("invitations")
+}
+
+model Diagram {
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  name      String
+  umlModel  Json     @map("uml_model") @db.JsonB
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions        DiagramVersion[]
+  classLocks      ClassLock[]
+  aiConversations AiConversation[]
+  generations     Generation[]
+
+  @@map("diagrams")
+}
+
+model DiagramVersion {
+  id        String   @id @default(uuid())
+  diagramId String   @map("diagram_id")
+  version   Int
+  umlModel  Json     @map("uml_model") @db.JsonB
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdBy], references: [id])
+
+  @@map("diagram_versions")
+}
+
+model ClassLock {
+  id        String   @id @default(uuid())
+  diagramId String   @map("diagram_id")
+  classId   String   @map("class_id")
+  lockedBy  String   @map("locked_by")
+  expiresAt DateTime @map("expires_at")
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [lockedBy], references: [id])
+
+  @@unique([diagramId, classId])
+  @@map("class_locks")
+}
+
+model AiConversation {
+  id        String   @id @default(uuid())
+  diagramId String   @map("diagram_id")
+  userId    String   @map("user_id")
+  agentType String   @default("text") @map("agent_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  diagram  Diagram     @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id])
+  messages AiMessage[]
+
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  role           String
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  operations   AiOperation[]
+
+  @@map("ai_messages")
+}
+
+model AiOperation {
+  id          String  @id @default(uuid())
+  diagramId   String  @map("diagram_id")
+  messageId   String  @map("message_id")
+  commands    Json    @db.JsonB
+  modelBefore Json    @map("model_before") @db.JsonB
+  modelAfter  Json    @map("model_after") @db.JsonB
+  applied     Boolean @default(false)
+
+  message AiMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("ai_operations")
+}
+
+enum GenerationStatus {
+  pending
+  completed
+  failed
+}
+
+model Generation {
+  id        String           @id @default(uuid())
+  diagramId String           @map("diagram_id")
+  userId    String           @map("user_id")
+  files     Json             @db.JsonB
+  s3Key     String?          @map("s3_key")
+  status    GenerationStatus @default(pending)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  diagram Diagram @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("generations")
+}

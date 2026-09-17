@@ -1,0 +1,26 @@
+# --- Seguridad / Configuración ---
+.env
+.env.*
+*.pem
+
+# --- Dependencias ---
+node_modules/
+venv/
+env/
+.venv/
+
+# --- Build / Compilación / Logs ---
+dist/
+build/
+*.log
+npm-debug.log*
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+reference-project/
+AGENTS.md 
+prompt.md 
+
+

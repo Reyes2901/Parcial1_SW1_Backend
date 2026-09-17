@@ -1,0 +1,12 @@
+package com.example.{{packageName}}.repository;
+
+import com.example.{{packageName}}.entity.{{className}};
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+{{#if idTypeImport}}
+import {{idTypeImport}};
+{{/if}}
+
+@Repository
+public interface {{className}}Repository extends JpaRepository<{{className}}, {{idJavaType}}> {
+}

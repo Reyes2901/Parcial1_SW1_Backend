@@ -1,0 +1,62 @@
+package com.example.{{packageName}}.service;
+
+import com.example.{{packageName}}.dto.{{className}}DTO;
+import com.example.{{packageName}}.entity.{{className}};
+import com.example.{{packageName}}.mapper.{{className}}Mapper;
+import com.example.{{packageName}}.repository.{{className}}Repository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+{{#if idTypeImport}}
+import {{idTypeImport}};
+{{/if}}
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class {{className}}Service {
+
+    private final {{className}}Repository repository;
+    private final {{className}}Mapper mapper;
+
+    public {{className}}Service({{className}}Repository repository, {{className}}Mapper mapper) {
+        this.repository = repository;
+        this.mapper = mapper;
+    }
+
+    @Transactional(readOnly = true)
+    public List<{{className}}DTO> findAll() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public {{className}}DTO findById({{idJavaType}} id) {
+        {{className}} entity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("{{className}} not found with id: " + id));
+        return mapper.toDto(entity);
+    }
+
+    public {{className}}DTO create({{className}}DTO dto) {
+        {{className}} entity = mapper.toEntity(dto);
+        {{className}} saved = repository.save(entity);
+        return mapper.toDto(saved);
+    }
+
+    public {{className}}DTO update({{idJavaType}} id, {{className}}DTO dto) {
+        {{className}} existing = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("{{className}} not found with id: " + id));
+        mapper.updateEntityFromDto(dto, existing);
+        {{className}} saved = repository.save(existing);
+        return mapper.toDto(saved);
+    }
+
+    public void delete({{idJavaType}} id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("{{className}} not found with id: " + id);
+        }
+        repository.deleteById(id);
+    }
+}

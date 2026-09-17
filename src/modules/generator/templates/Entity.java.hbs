@@ -1,0 +1,43 @@
+package com.example.{{packageName}}.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+{{#if imports}}
+{{#each imports}}
+import {{this}};
+{{/each}}
+{{/if}}
+
+@Entity
+@Table(name = "{{tableName}}")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+{{#unless (or extendsClass inheritanceAnnotation)}}
+@Builder
+{{/unless}}
+{{#if inheritanceAnnotation}}
+{{{inheritanceAnnotation}}}
+{{/if}}
+public class {{className}}{{#if extendsClass}} extends {{extendsClass}}{{/if}} {
+
+{{#unless extendsClass}}
+    @Id
+{{#if isIdGenerated}}
+    @GeneratedValue(strategy = GenerationType.{{idGenerationStrategy}})
+{{/if}}
+    @Column(name = "{{idColumnName}}")
+    private {{idJavaType}} {{idFieldName}};
+{{/unless}}
+
+{{#each attributes}}
+    @Column(name = "{{columnName}}"{{#if isRequired}}, nullable = false{{/if}}{{#if isUnique}}, unique = true{{/if}})
+    private {{javaType}} {{fieldName}};
+{{/each}}
+
+{{#each relationFields}}
+    {{{annotation}}}
+    private {{#if (eq relationType 'OneToMany')}}java.util.List<{{targetClassName}}>{{else if (eq relationType 'ManyToMany')}}java.util.Set<{{targetClassName}}>{{else}}{{targetClassName}}{{/if}} {{fieldName}};
+{{/each}}
+}

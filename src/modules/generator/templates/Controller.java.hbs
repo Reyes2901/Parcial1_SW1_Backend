@@ -1,0 +1,50 @@
+package com.example.{{packageName}}.controller;
+
+import com.example.{{packageName}}.dto.{{className}}DTO;
+import com.example.{{packageName}}.service.{{className}}Service;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+{{#if idTypeImport}}
+import {{idTypeImport}};
+{{/if}}
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/{{pluralKebabName}}")
+public class {{className}}Controller {
+
+    private final {{className}}Service service;
+
+    public {{className}}Controller({{className}}Service service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<{{className}}DTO>> getAll() {
+        return ResponseEntity.ok(service.findAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<{{className}}DTO> getById(@PathVariable {{idJavaType}} id) {
+        return ResponseEntity.ok(service.findById(id));
+    }
+
+    @PostMapping
+    public ResponseEntity<{{className}}DTO> create(@Valid @RequestBody {{className}}DTO dto) {
+        return new ResponseEntity<>(service.create(dto), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<{{className}}DTO> update(@PathVariable {{idJavaType}} id, @Valid @RequestBody {{className}}DTO dto) {
+        return ResponseEntity.ok(service.update(id, dto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable {{idJavaType}} id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
