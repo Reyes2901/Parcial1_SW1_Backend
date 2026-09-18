@@ -1,5 +1,4 @@
-// modules/auth/google-oauth.provider.ts
-// Google OAuth provider — behind an interface for swappable providers (§4 rule #4)
+import { UnauthorizedError } from '../../shared/errors';
 
 export interface OAuthUserInfo {
   googleId: string;
@@ -55,7 +54,7 @@ export class GoogleOAuthProvider implements IOAuthProvider {
     );
 
     if (!tokenResponse.ok) {
-      throw new Error(`Failed to exchange code for tokens: ${tokenResponse.statusText}`);
+      throw new UnauthorizedError(`Failed to exchange code for tokens: ${tokenResponse.statusText}`);
     }
 
     const tokens = (await tokenResponse.json()) as { access_token: string };
@@ -69,7 +68,7 @@ export class GoogleOAuthProvider implements IOAuthProvider {
     );
 
     if (!userInfoResponse.ok) {
-      throw new Error(`Failed to get user info: ${userInfoResponse.statusText}`);
+      throw new UnauthorizedError(`Failed to get user info: ${userInfoResponse.statusText}`);
     }
 
     const userInfo = (await userInfoResponse.json()) as {

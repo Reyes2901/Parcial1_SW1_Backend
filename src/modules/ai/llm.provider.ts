@@ -1,6 +1,4 @@
-// modules/ai/llm.provider.ts
-// LLM provider interface + concrete implementation (§4 rule #4)
-// Credentials from env vars only.
+import { ValidationError } from '../../shared/errors';
 
 export interface LLMToolCall {
   name: string;
@@ -74,7 +72,7 @@ export class OpenAILLMProvider implements ILLMProvider {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`LLM API error: ${response.status} ${error}`);
+      throw new ValidationError(`LLM API error: ${response.status} ${error}`);
     }
 
     const data = (await response.json()) as {

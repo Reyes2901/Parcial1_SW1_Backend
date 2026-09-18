@@ -125,6 +125,11 @@ export function applyCommand(model: UMLModel, command: UMLCommand): UMLModel {
         targetClassId: targetClass?.id ?? command.targetClass,
         sourceCardinality: command.sourceCardinality,
         targetCardinality: command.targetCardinality,
+        name: command.name,
+        attributes: command.attributes?.map((attr) => ({
+          ...attr,
+          id: generateId(),
+        })),
       };
       return {
         ...model,

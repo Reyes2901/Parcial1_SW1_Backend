@@ -33,6 +33,8 @@ export type UMLCommand =
       targetClass: string;
       sourceCardinality: Cardinality;
       targetCardinality: Cardinality;
+      name?: string;
+      attributes?: Omit<UMLAttribute, 'id'>[];
     }
   | { type: 'remove_relation'; relationId: string }
   | { type: 'move_class'; classId: string; x: number; y: number };

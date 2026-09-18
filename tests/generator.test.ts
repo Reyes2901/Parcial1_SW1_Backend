@@ -107,6 +107,17 @@ describe('Spring Boot Generator', () => {
           targetClassId: 'cls-order',
           sourceCardinality: '0..*',
           targetCardinality: '0..*',
+          attributes: [
+            {
+              id: 'attr-qty',
+              name: 'quantity',
+              type: 'Integer',
+              visibility: 'private',
+              isPrimaryKey: false,
+              isRequired: true,
+              isUnique: false,
+            },
+          ],
         },
       ],
     };

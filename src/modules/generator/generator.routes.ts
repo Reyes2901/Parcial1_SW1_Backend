@@ -16,7 +16,7 @@ const generationsService = new GenerationsService();
 export async function generatorRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/diagrams/:id/generate',
-    { preHandler: [authMiddleware, requireProjectRole('owner', 'editor', 'viewer')] },
+    { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
 

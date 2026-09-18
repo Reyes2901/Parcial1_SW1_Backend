@@ -52,6 +52,7 @@ export interface UMLRelation {
   sourceRole?: string;
   targetRole?: string;
   name?: string;
+  attributes?: UMLAttribute[];
 }
 
 export interface UMLModel {

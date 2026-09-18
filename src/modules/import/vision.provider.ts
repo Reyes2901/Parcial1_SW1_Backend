@@ -2,6 +2,7 @@
 // Vision provider interface + concrete implementation (§4 rule #4, §7.6)
 
 import type { UMLCommand } from '../../domain/uml-command';
+import { ValidationError } from '../../shared/errors';
 import { UML_TOOLS } from '../ai/tools';
 
 export interface IVisionProvider {
@@ -59,7 +60,7 @@ Return the diagram structure ONLY by calling the provided tool functions (add_cl
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Vision API error: ${response.status} ${errorText}`);
+      throw new ValidationError(`Vision API error: ${response.status} ${errorText}`);
     }
 
     const data = (await response.json()) as {

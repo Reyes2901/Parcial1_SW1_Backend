@@ -2,6 +2,7 @@
 // Relation mapping rules per AGENTS.md §7.7
 
 import type { UMLModel } from '../../../domain/uml-model';
+import { ValidationError } from '../../../shared/errors';
 import { toCamelCase, toSnakeCase } from './naming';
 
 export interface MappedRelationField {
@@ -172,17 +173,22 @@ export function mapRelationsForClass(
   return { fields, extendsClass, inheritanceAnnotation };
 }
 
+/**
+ * §7.7 Rule: An N:M relationship with custom attributes (e.g., Pedido-Producto with cantidad and precio)
+ * cannot be generated as plain @ManyToMany. The user must model an explicit associative class instead.
+ */
 export function validateAssociativeClasses(model: UMLModel): void {
   for (const rel of model.relations) {
     const srcMany = rel.sourceCardinality === '1..*' || rel.sourceCardinality === '0..*' || rel.sourceCardinality === '*';
     const tgtMany = rel.targetCardinality === '1..*' || rel.targetCardinality === '0..*' || rel.targetCardinality === '*';
 
     if (srcMany && tgtMany) {
-      if (rel.name && rel.name.trim().length > 0) {
+      if (rel.attributes && rel.attributes.length > 0) {
         const srcClass = model.classes.find((c) => c.id === rel.sourceClassId);
         const tgtClass = model.classes.find((c) => c.id === rel.targetClassId);
-        throw new Error(
-          `Relationship N:M "${rel.name}" between "${srcClass?.name}" and "${tgtClass?.name}" has custom properties. Model an explicit associative class instead of plain @ManyToMany.`
+        const relNameStr = rel.name ? ` "${rel.name}"` : '';
+        throw new ValidationError(
+          `Relationship N:M${relNameStr} between "${srcClass?.name}" and "${tgtClass?.name}" has custom attributes. Model an explicit associative class instead of plain @ManyToMany.`
         );
       }
     }

@@ -5,6 +5,7 @@
 // Note: 'any' is justified here due to dynamic XML structure parsed by fast-xml-parser
 
 import { XMLParser } from 'fast-xml-parser';
+import { ValidationError } from '../../shared/errors';
 import type { UMLCommand } from '../../domain/uml-command';
 import type { Visibility, ClassKind, RelationKind, Cardinality } from '../../domain/uml-model';
 
@@ -33,7 +34,7 @@ export function parseXMI(xmlContent: string): XMIParseResult {
     parsed = parser.parse(xmlContent);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`Failed to parse XML: ${msg}`);
+    throw new ValidationError(`Failed to parse XML: ${msg}`);
   }
 
   // Handle UML / XMI root

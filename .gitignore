@@ -23,6 +23,7 @@ scratch/
 **/target/
 *.class
 vitest.config.ts
+coverage/
 
 AGENTS.md 
 prompt.md 

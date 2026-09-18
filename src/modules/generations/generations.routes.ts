@@ -21,7 +21,29 @@ export async function generationsRoutes(fastify: FastifyInstance): Promise<void>
     }
   );
 
-  // PATCH /generations/:id/files/* — Edit content of a generated file (wildcard path)
+  // PATCH /generations/:id/files/:path — Edit content of a generated file (§8)
+  fastify.patch(
+    '/generations/:id/files/:path',
+    { preHandler: [authMiddleware] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const params = request.params as Record<string, string>;
+      const body = (request.body as { content?: string; path?: string; filePath?: string }) || {};
+      const filePath = params.path || params['*'] || body.path || body.filePath;
+
+      if (!filePath) {
+        throw new ValidationError('File path is required');
+      }
+      if (typeof body.content !== 'string') {
+        throw new ValidationError('File content must be a string');
+      }
+
+      const result = await service.updateFileContent(id, filePath, body.content);
+      return reply.send(result);
+    }
+  );
+
+  // PATCH /generations/:id/files/* — Edit content of a generated file (wildcard path for nested paths)
   fastify.patch(
     '/generations/:id/files/*',
     { preHandler: [authMiddleware] },
@@ -29,7 +51,7 @@ export async function generationsRoutes(fastify: FastifyInstance): Promise<void>
       const { id } = request.params as { id: string };
       const params = request.params as Record<string, string>;
       const body = (request.body as { content?: string; path?: string; filePath?: string }) || {};
-      const filePath = params['*'] || body.path || body.filePath;
+      const filePath = params['*'] || params.path || body.path || body.filePath;
 
       if (!filePath) {
         throw new ValidationError('File path is required');

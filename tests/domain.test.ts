@@ -278,4 +278,107 @@ describe('Domain - UML Model, Validator & Applier', () => {
     expect(appliedModel.relations).toHaveLength(1);
     expect(appliedModel.version).toBe(initialModel.version + 3);
   });
+
+  it('validates edge cases and invalid parameters in validator', () => {
+    // add_class invalid name & attribute name
+    const invalidClassCmd = {
+      type: 'add_class' as const,
+      name: 'invalid_Name',
+      attributes: [{ name: '123invalid', type: 'String', visibility: 'private' as const, isPrimaryKey: false, isRequired: true, isUnique: false }],
+    };
+    const errs1 = validateCommand(initialModel, invalidClassCmd);
+    expect(errs1.length).toBeGreaterThanOrEqual(2);
+
+    // rename_class errors: non-existent class, invalid new name, duplicate new name
+    const renameNonExistent = { type: 'rename_class' as const, classId: 'non-existent', newName: 'NewName' };
+    expect(validateCommand(initialModel, renameNonExistent)[0].message).toContain('does not exist');
+
+    const renameInvalid = { type: 'rename_class' as const, classId: 'class-1', newName: 'badName' };
+    expect(validateCommand(initialModel, renameInvalid)[0].message).toContain('not a valid Java class name');
+
+    // delete_class error: non-existent class
+    const deleteNonExistent = { type: 'delete_class' as const, classId: 'non-existent' };
+    expect(validateCommand(initialModel, deleteNonExistent)[0].message).toContain('does not exist');
+
+    // add_attribute errors: non-existent class, invalid attr name
+    const addAttrNonExistent = { type: 'add_attribute' as const, classId: 'non-existent', name: 'validAttr', dataType: 'String' };
+    expect(validateCommand(initialModel, addAttrNonExistent)[0].message).toContain('does not exist');
+
+    const addAttrInvalidName = { type: 'add_attribute' as const, classId: 'class-1', name: '123invalid', dataType: 'String' };
+    expect(validateCommand(initialModel, addAttrInvalidName)[0].message).toContain('not a valid Java identifier');
+
+    // remove_attribute errors: non-existent class, non-existent attribute
+    const removeAttrNonExistentClass = { type: 'remove_attribute' as const, classId: 'non-existent', attributeId: 'attr-1' };
+    expect(validateCommand(initialModel, removeAttrNonExistentClass)[0].message).toContain('does not exist');
+
+    const removeAttrNonExistentAttr = { type: 'remove_attribute' as const, classId: 'class-1', attributeId: 'non-existent' };
+    expect(validateCommand(initialModel, removeAttrNonExistentAttr)[0].message).toContain('does not exist');
+
+    // add_relation errors: non-existent source/target class, cyclic inheritance
+    const addRelNonExistentSrc = {
+      type: 'add_relation' as const,
+      kind: 'association' as const,
+      sourceClass: 'non-existent-src',
+      targetClass: 'class-1',
+      sourceCardinality: '1' as const,
+      targetCardinality: '1' as const,
+    };
+    expect(validateCommand(initialModel, addRelNonExistentSrc)[0].message).toContain('does not exist');
+
+    const addRelNonExistentTgt = {
+      type: 'add_relation' as const,
+      kind: 'association' as const,
+      sourceClass: 'class-1',
+      targetClass: 'non-existent-tgt',
+      sourceCardinality: '1' as const,
+      targetCardinality: '1' as const,
+    };
+    expect(validateCommand(initialModel, addRelNonExistentTgt)[0].message).toContain('does not exist');
+
+    // remove_relation error: non-existent relation
+    const removeRelNonExistent = { type: 'remove_relation' as const, relationId: 'non-existent-rel' };
+    expect(validateCommand(initialModel, removeRelNonExistent)[0].message).toContain('does not exist');
+
+    // move_class error: non-existent class
+    const moveNonExistent = { type: 'move_class' as const, classId: 'non-existent', x: 10, y: 20 };
+    expect(validateCommand(initialModel, moveNonExistent)[0].message).toContain('does not exist');
+
+    // unknown command type
+    const unknownCmd = { type: 'unknown_type' as any };
+    expect(validateCommand(initialModel, unknownCmd)[0].message).toContain('Unknown command type');
+  });
+
+  it('validates cyclic inheritance detection on adding inheritance relation', () => {
+    const parentChildModel: UMLModel = {
+      ...initialModel,
+      classes: [
+        ...initialModel.classes,
+        { id: 'c-child', name: 'Child', kind: 'class', attributes: [], methods: [], position: { x: 0, y: 0 } },
+      ],
+      relations: [
+        {
+          id: 'rel-inh-1',
+          kind: 'inheritance',
+          sourceClassId: 'c-child',
+          targetClassId: 'class-1',
+          sourceCardinality: '1',
+          targetCardinality: '1',
+        },
+      ],
+    };
+
+    // Try adding inverse inheritance from Parent to Child
+    const addCyclicInhCmd = {
+      type: 'add_relation' as const,
+      kind: 'inheritance' as const,
+      sourceClass: 'class-1',
+      targetClass: 'c-child',
+      sourceCardinality: '1' as const,
+      targetCardinality: '1' as const,
+    };
+
+    const errs = validateCommand(parentChildModel, addCyclicInhCmd);
+    expect(errs.length).toBeGreaterThan(0);
+    expect(errs[0].message).toContain('cyclic inheritance');
+  });
 });
