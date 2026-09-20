@@ -25,6 +25,14 @@ export async function generatorRoutes(fastify: FastifyInstance): Promise<void> {
 
       const model = diagram.umlModel as unknown as UMLModel;
 
+      // Validate: MCU must have at least one class to generate code
+      if (!model.classes || model.classes.length === 0) {
+        return reply.status(400).send({
+          error: 'El diagrama debe tener al menos una clase para generar código',
+          code: 'EMPTY_DIAGRAM',
+        });
+      }
+
       // Generate Spring Boot project file tree
       const files = generatorService.generateProject(model);
 
@@ -44,3 +52,5 @@ export async function generatorRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 }
+
+

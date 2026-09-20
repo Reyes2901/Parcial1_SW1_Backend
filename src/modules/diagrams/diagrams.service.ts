@@ -211,4 +211,38 @@ export class DiagramsService {
       },
     });
   }
+
+  /** Rename a diagram */
+  async renameDiagram(diagramId: string, name: string) {
+    const diagram = await prisma.diagram.findUnique({ where: { id: diagramId } });
+    if (!diagram) throw new NotFoundError('Diagram', diagramId);
+    return prisma.diagram.update({
+      where: { id: diagramId },
+      data: { name },
+    });
+  }
+
+  /** Delete a diagram */
+  async deleteDiagram(diagramId: string) {
+    const diagram = await prisma.diagram.findUnique({ where: { id: diagramId } });
+    if (!diagram) throw new NotFoundError('Diagram', diagramId);
+    await prisma.diagram.delete({ where: { id: diagramId } });
+    return { deleted: true };
+  }
+
+  /** Duplicate a diagram */
+  async duplicateDiagram(diagramId: string, _userId: string) {
+    const original = await prisma.diagram.findUnique({ where: { id: diagramId } });
+    if (!original) throw new NotFoundError('Diagram', diagramId);
+    const copy = await prisma.diagram.create({
+      data: {
+        projectId: original.projectId,
+        name: `${original.name} (copia)`,
+        umlModel: original.umlModel as Prisma.InputJsonValue,
+        version: 1,
+      },
+    });
+    return copy;
+  }
 }
+

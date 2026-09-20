@@ -1,5 +1,5 @@
 // modules/diagrams/diagrams.routes.ts
-// CRUD diagramas + versiones (§7.2, §8)
+// CRUD diagramas + versiones + rename + delete + duplicate
 
 import { FastifyInstance } from 'fastify';
 import { authMiddleware } from '../../shared/auth-middleware';
@@ -10,7 +10,7 @@ import type { UMLModel } from '../../domain/uml-model';
 const service = new DiagramsService();
 
 export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
-  // GET /projects/:id/diagrams — List diagrams in a project
+  // GET /projects/:id/diagrams - List diagrams in a project
   fastify.get(
     '/projects/:id/diagrams',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor', 'viewer')] },
@@ -21,7 +21,7 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // POST /projects/:id/diagrams — Create a diagram
+  // POST /projects/:id/diagrams - Create a diagram
   fastify.post(
     '/projects/:id/diagrams',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
@@ -33,7 +33,7 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // GET /diagrams/:id — Get diagram with full MCU
+  // GET /diagrams/:id - Get diagram with full MCU
   fastify.get(
     '/diagrams/:id',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor', 'viewer')] },
@@ -44,7 +44,7 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // PUT /diagrams/:id — Update diagram MCU (debounced save)
+  // PUT /diagrams/:id - Update diagram MCU (debounced save)
   fastify.put(
     '/diagrams/:id',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
@@ -56,7 +56,41 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // POST /diagrams/:id/versions — Create a snapshot
+  // PUT /diagrams/:id/rename - Rename diagram
+  fastify.put(
+    '/diagrams/:id/rename',
+    { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const { name } = request.body as { name: string };
+      const diagram = await service.renameDiagram(id, name);
+      return reply.send(diagram);
+    }
+  );
+
+  // DELETE /diagrams/:id - Delete diagram
+  fastify.delete(
+    '/diagrams/:id',
+    { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      await service.deleteDiagram(id);
+      return reply.status(204).send();
+    }
+  );
+
+  // POST /diagrams/:id/duplicate - Duplicate diagram
+  fastify.post(
+    '/diagrams/:id/duplicate',
+    { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const duplicate = await service.duplicateDiagram(id, request.currentUser!.userId);
+      return reply.status(201).send(duplicate);
+    }
+  );
+
+  // POST /diagrams/:id/versions - Create a snapshot
   fastify.post(
     '/diagrams/:id/versions',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
@@ -67,7 +101,7 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // GET /diagrams/:id/versions — List versions
+  // GET /diagrams/:id/versions - List versions
   fastify.get(
     '/diagrams/:id/versions',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor', 'viewer')] },
@@ -78,7 +112,7 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
-  // POST /diagrams/:id/versions/:versionId/restore — Restore a version
+  // POST /diagrams/:id/versions/:versionId/restore - Restore a version
   fastify.post(
     '/diagrams/:id/versions/:versionId/restore',
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },

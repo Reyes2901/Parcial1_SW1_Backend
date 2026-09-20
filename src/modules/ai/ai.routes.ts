@@ -84,6 +84,14 @@ export async function aiRoutes(fastify: FastifyInstance): Promise<void> {
         });
       }
 
+      // Guard: LLM_API_KEY must be configured
+      if (!process.env.LLM_API_KEY) {
+        return reply.status(503).send({
+          error: 'El proveedor de IA no está configurado. Contacta al administrador.',
+          code: 'AI_NOT_CONFIGURED',
+        });
+      }
+
       const userId = request.currentUser!.userId;
 
       // Process new message
@@ -198,3 +206,4 @@ export async function aiRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 }
+
