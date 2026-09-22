@@ -233,7 +233,7 @@ export class SpringBootGeneratorService {
     files[readmePath] = readmeTpl({
       projectName: model.name || 'Demo Project',
       databaseDescription:
-        'Base de datos H2 en memoria. Las tablas se crean automáticamente al arrancar. Consola H2 disponible en http://localhost:8080/h2-console.',
+        `Base de datos PostgreSQL. Crea la BD antes de arrancar: psql -U postgres -c "CREATE DATABASE ${appName.replace(/-/g, '_')}_db;". Las tablas se crean automáticamente con ddl-auto=update.`,
       entities,
     });
 

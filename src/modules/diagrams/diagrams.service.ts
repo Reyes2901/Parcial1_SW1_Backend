@@ -62,7 +62,7 @@ export class DiagramsService {
   }
 
   /** Update the full UML model (debounced save from client) */
-  async updateDiagramModel(diagramId: string, umlModel: UMLModel, expectedVersion: number) {
+  async updateDiagramModel(diagramId: string, umlModel: UMLModel, expectedVersion?: number) {
     const diagram = await prisma.diagram.findUnique({
       where: { id: diagramId },
     });
@@ -71,10 +71,12 @@ export class DiagramsService {
     }
 
     // Optimistic concurrency check
-    if (diagram.version !== expectedVersion) {
-      throw new ConflictError(
-        `Version conflict: expected ${expectedVersion}, current is ${diagram.version}`
-      );
+    if (expectedVersion !== undefined && expectedVersion !== null) {
+      if (diagram.version !== expectedVersion) {
+        throw new ConflictError(
+          `Version conflict: expected ${expectedVersion}, current is ${diagram.version}`
+        );
+      }
     }
 
     const updated = await prisma.diagram.update({

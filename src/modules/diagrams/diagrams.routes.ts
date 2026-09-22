@@ -50,8 +50,9 @@ export async function diagramsRoutes(fastify: FastifyInstance): Promise<void> {
     { preHandler: [authMiddleware, requireProjectRole('owner', 'editor')] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const body = request.body as { umlModel: UMLModel; version: number };
-      const diagram = await service.updateDiagramModel(id, body.umlModel, body.version);
+      const body = request.body as { umlModel: UMLModel; version?: number; expectedVersion?: number };
+      const expectedVersion = body.expectedVersion !== undefined ? body.expectedVersion : body.version;
+      const diagram = await service.updateDiagramModel(id, body.umlModel, expectedVersion);
       return reply.send(diagram);
     }
   );

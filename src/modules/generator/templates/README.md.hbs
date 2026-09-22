@@ -5,25 +5,26 @@ Proyecto Spring Boot generado automáticamente por CASE UML Platform.
 ## Requisitos
 - Java 17+
 - Maven 3.9+
-
-## Ejecución
-`ash
-mvn spring-boot:run
-`
-El servidor arranca en http://localhost:8080.
+- PostgreSQL 14+
 
 ## Base de datos
 {{databaseDescription}}
+
+## Ejecución
+```bash
+mvn spring-boot:run
+```
+El servidor arranca en http://localhost:8080.
 
 ## Endpoints disponibles
 {{#each entities}}
 
 ### {{pascalName}}
-- GET /api/{{pluralKebabName}} — Lista
-- GET /api/{{pluralKebabName}}/:id — Obtener por ID
-- POST /api/{{pluralKebabName}} — Crear
-- PUT /api/{{pluralKebabName}}/:id — Actualizar
-- DELETE /api/{{pluralKebabName}}/:id — Eliminar
+- GET /api/v1/{{pluralKebabName}} — Lista
+- GET /api/v1/{{pluralKebabName}}/:id — Obtener por ID
+- POST /api/v1/{{pluralKebabName}} — Crear
+- PUT /api/v1/{{pluralKebabName}}/:id — Actualizar
+- DELETE /api/v1/{{pluralKebabName}}/:id — Eliminar
 {{/each}}
 
 ## Pruebas con Postman
