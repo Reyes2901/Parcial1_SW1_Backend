@@ -216,7 +216,28 @@ export class SpringBootGeneratorService {
       files[`${javaBaseDir}/mapper/${className}Mapper.java`] = mapperTpl(templateContext);
     }
 
-    // 5. Postman Collection
+        // 5. README.md
+    const entities = model.classes.map((cls) => {
+      const tableName = toPluralSnakeCase(cls.name);
+      const pluralKebabName = tableName.replace(/_/g, '-');
+      return {
+        name: cls.name,
+        pascalName: toPascalCase(cls.name),
+        camelName: toCamelCase(cls.name),
+        pluralKebabName,
+      };
+    });
+
+    const readmeTpl = this.loadTemplate('README.md');
+    const readmePath = baseDir + '/README.md';
+    files[readmePath] = readmeTpl({
+      projectName: model.name || 'Demo Project',
+      databaseDescription:
+        'Base de datos H2 en memoria. Las tablas se crean automáticamente al arrancar. Consola H2 disponible en http://localhost:8080/h2-console.',
+      entities,
+    });
+
+    // 6. Postman Collection
     const postmanCol = generatePostmanCollection(model);
     files[`${baseDir}/postman_collection.json`] = JSON.stringify(postmanCol, null, 2);
 

@@ -1,4 +1,4 @@
-// src/server.ts
+﻿// src/server.ts
 // Main Fastify server application entrypoint
 
 import Fastify from 'fastify';
@@ -18,6 +18,8 @@ import { xmiImportRoutes } from './modules/import/xmi-import.routes';
 import { imageImportRoutes } from './modules/import/image-import.routes';
 import { generatorRoutes } from './modules/generator/generator.routes';
 import { generationsRoutes } from './modules/generations/generations.routes';
+import websocket from '@fastify/websocket';
+import { collaborationWsRoutes } from './modules/collaboration/ws.routes';
 
 export function buildServer() {
   const server = Fastify({
@@ -28,7 +30,7 @@ export function buildServer() {
   server.register(cors, { origin: true });
   server.register(multipart, { limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
 
-  // Centralized Error Handler (§10)
+  // Centralized Error Handler
   server.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send({
@@ -60,7 +62,17 @@ export function buildServer() {
   server.register(xmiImportRoutes);
   server.register(imageImportRoutes);
   server.register(generatorRoutes);
+  server.register(websocket);
+  server.register(collaborationWsRoutes);
   server.register(generationsRoutes);
+
+  // Bug 1.3 - evitar MaxListenersExceededWarning con multiples conexiones WS
+  server.addHook('onReady', async () => {
+    const wss = (server as unknown as { websocketServer?: { setMaxListeners?: (n: number) => void } }).websocketServer;
+    if (wss && typeof wss.setMaxListeners === 'function') {
+      wss.setMaxListeners(50);
+    }
+  });
 
   return server;
 }
@@ -75,6 +87,6 @@ if (require.main === module) {
       server.log.error(err);
       process.exit(1);
     }
-    console.log(`Server listening on ${address}`);
+    console.log('Server listening on ' + address);
   });
 }

@@ -197,12 +197,33 @@ export class ProjectsService {
   }
 
   async listMembers(projectId: string) {
-    return prisma.projectMember.findMany({
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { owner: { select: { id: true, name: true, email: true } } },
+    });
+    if (!project) throw new NotFoundError('Project', projectId);
+
+    const members = await prisma.projectMember.findMany({
       where: { projectId },
       include: {
         user: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
     });
+
+    // Asegurar que el owner siempre aparezca en la lista
+    const ownerInList = members.some((m) => m.userId === project.ownerId);
+    if (!ownerInList && project.owner) {
+      members.unshift({
+        id: 'owner-fallback',
+        projectId,
+        userId: project.ownerId,
+        role: 'owner' as any,
+        joinedAt: project.createdAt,
+        user: project.owner as any,
+      } as any);
+    }
+
+    return members;
   }
 
   async updateMemberRole(projectId: string, targetUserId: string, newRole: ProjectRole, requesterId: string) {
@@ -243,3 +264,4 @@ export class ProjectsService {
     return { message: 'Member removed' };
   }
 }
+

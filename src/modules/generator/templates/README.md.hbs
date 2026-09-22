@@ -1,0 +1,32 @@
+# {{projectName}}
+
+Proyecto Spring Boot generado automáticamente por CASE UML Platform.
+
+## Requisitos
+- Java 17+
+- Maven 3.9+
+
+## Ejecución
+`ash
+mvn spring-boot:run
+`
+El servidor arranca en http://localhost:8080.
+
+## Base de datos
+{{databaseDescription}}
+
+## Endpoints disponibles
+{{#each entities}}
+
+### {{pascalName}}
+- GET /api/{{pluralKebabName}} — Lista
+- GET /api/{{pluralKebabName}}/:id — Obtener por ID
+- POST /api/{{pluralKebabName}} — Crear
+- PUT /api/{{pluralKebabName}}/:id — Actualizar
+- DELETE /api/{{pluralKebabName}}/:id — Eliminar
+{{/each}}
+
+## Pruebas con Postman
+1. Abre Postman Desktop.
+2. Import → File → postman_collection.json.
+3. Ejecuta las requests.
