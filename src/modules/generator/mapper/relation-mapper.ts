@@ -1,9 +1,46 @@
 // modules/generator/mapper/relation-mapper.ts
-// Relation mapping rules per AGENTS.md §7.7
 
 import type { UMLModel } from '../../../domain/uml-model';
 import { ValidationError } from '../../../shared/errors';
-import { toCamelCase, toSnakeCase } from './naming';
+import { toCamelCase, toPascalCase, toSnakeCase } from './naming';
+
+/**
+ * Palabras reservadas de Java que NO pueden usarse como identificador.
+ * Si un nombre cae aquí, se sufija con "Field" (ej: "class" -> "classField").
+ */
+const JAVA_RESERVED = new Set<string>([
+  'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class',
+  'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extends', 'final',
+  'finally', 'float', 'for', 'goto', 'if', 'implements', 'import', 'instanceof', 'int',
+  'interface', 'long', 'native', 'new', 'package', 'private', 'protected', 'public',
+  'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this',
+  'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while',
+  'true', 'false', 'null',
+]);
+
+/**
+ * Devuelve un nombre de campo seguro para Java.
+ *   "class"  -> "classField"
+ *   "int"    -> "intField"
+ *   "nombre" -> "nombre"
+ */
+function safeFieldName(rawName: string): string {
+  let name = String(rawName ?? '').replace(/[^a-zA-Z0-9_$]/g, '');
+  if (!name) name = 'field';
+  if (JAVA_RESERVED.has(name)) name = `${name}Field`;
+  if (/^[0-9]/.test(name)) name = `_${name}`;
+  return name;
+}
+
+/**
+ * Nombre del campo Java que apunta a `className`.
+ * Se usa consistentemente para `fieldName` Y para `mappedBy` del lado opuesto.
+ *   "Usuario"  -> "usuario"
+ *   "Class"    -> "classField"   (evita keyword)
+ */
+function fieldNameFor(className: string): string {
+  return safeFieldName(toCamelCase(className));
+}
 
 export interface MappedRelationField {
   fieldName: string;
@@ -48,11 +85,17 @@ export function mapRelationsForClass(
     const otherClass = model.classes.find((c) => c.id === otherClassId);
     if (!otherClass) continue;
 
+    // ─── BUG FIX: el tipo Java SIEMPRE en PascalCase ───
+    const otherClassName = toPascalCase(otherClass.name);
+
+    // ─── BUG FIX: nombre del campo seguro (evita keywords como "class") ───
+    const fieldName = fieldNameFor(otherClass.name);
+    const oppositeFieldName = fieldNameFor(currentClass.name);
+
     // Handle Inheritance
     if (rel.kind === 'inheritance') {
       if (isSource) {
-        // Source inherits from Target (extends target)
-        extendsClass = otherClass.name;
+        extendsClass = otherClassName;
       }
       continue;
     }
@@ -67,9 +110,9 @@ export function mapRelationsForClass(
     if (!sourceIsMany && !targetIsMany) {
       if (isSource) {
         fields.push({
-          fieldName: toCamelCase(otherClass.name),
-          targetClassName: otherClass.name,
-          targetClassFieldName: toCamelCase(currentClass.name),
+          fieldName,
+          targetClassName: otherClassName,
+          targetClassFieldName: oppositeFieldName,
           relationType: 'OneToOne',
           annotation: `@OneToOne\n    @JoinColumn(name = "${toSnakeCase(otherClass.name)}_id")`,
           joinColumnName: `${toSnakeCase(otherClass.name)}_id`,
@@ -77,12 +120,12 @@ export function mapRelationsForClass(
         });
       } else {
         fields.push({
-          fieldName: toCamelCase(otherClass.name),
-          targetClassName: otherClass.name,
-          targetClassFieldName: toCamelCase(currentClass.name),
+          fieldName,
+          targetClassName: otherClassName,
+          targetClassFieldName: oppositeFieldName,
           relationType: 'OneToOne',
-          annotation: `@OneToOne(mappedBy = "${toCamelCase(currentClass.name)}")`,
-          mappedBy: toCamelCase(currentClass.name),
+          annotation: `@OneToOne(mappedBy = "${oppositeFieldName}")`,
+          mappedBy: oppositeFieldName,
           isOwner: false,
         });
       }
@@ -92,23 +135,23 @@ export function mapRelationsForClass(
       if (isSource) {
         const isComposition = rel.kind === 'composition';
         fields.push({
-          fieldName: `${toCamelCase(otherClass.name)}List`,
-          targetClassName: otherClass.name,
-          targetClassFieldName: toCamelCase(currentClass.name),
+          fieldName: `${fieldName}List`,
+          targetClassName: otherClassName,
+          targetClassFieldName: oppositeFieldName,
           relationType: 'OneToMany',
           annotation: isComposition
-            ? `@OneToMany(mappedBy = "${toCamelCase(currentClass.name)}", cascade = CascadeType.ALL, orphanRemoval = true)`
-            : `@OneToMany(mappedBy = "${toCamelCase(currentClass.name)}")`,
-          mappedBy: toCamelCase(currentClass.name),
+            ? `@OneToMany(mappedBy = "${oppositeFieldName}", cascade = CascadeType.ALL, orphanRemoval = true)`
+            : `@OneToMany(mappedBy = "${oppositeFieldName}")`,
+          mappedBy: oppositeFieldName,
           cascadeAll: isComposition,
           orphanRemoval: isComposition,
           isOwner: false,
         });
       } else {
         fields.push({
-          fieldName: toCamelCase(otherClass.name),
-          targetClassName: otherClass.name,
-          targetClassFieldName: `${toCamelCase(currentClass.name)}List`,
+          fieldName,
+          targetClassName: otherClassName,
+          targetClassFieldName: `${oppositeFieldName}List`,
           relationType: 'ManyToOne',
           annotation: `@ManyToOne\n    @JoinColumn(name = "${toSnakeCase(otherClass.name)}_id")`,
           joinColumnName: `${toSnakeCase(otherClass.name)}_id`,
@@ -118,9 +161,9 @@ export function mapRelationsForClass(
     } else if (sourceIsMany && !targetIsMany) {
       if (isSource) {
         fields.push({
-          fieldName: toCamelCase(otherClass.name),
-          targetClassName: otherClass.name,
-          targetClassFieldName: `${toCamelCase(currentClass.name)}List`,
+          fieldName,
+          targetClassName: otherClassName,
+          targetClassFieldName: `${oppositeFieldName}List`,
           relationType: 'ManyToOne',
           annotation: `@ManyToOne\n    @JoinColumn(name = "${toSnakeCase(otherClass.name)}_id")`,
           joinColumnName: `${toSnakeCase(otherClass.name)}_id`,
@@ -129,14 +172,14 @@ export function mapRelationsForClass(
       } else {
         const isComposition = rel.kind === 'composition';
         fields.push({
-          fieldName: `${toCamelCase(otherClass.name)}List`,
-          targetClassName: otherClass.name,
-          targetClassFieldName: toCamelCase(currentClass.name),
+          fieldName: `${fieldName}List`,
+          targetClassName: otherClassName,
+          targetClassFieldName: oppositeFieldName,
           relationType: 'OneToMany',
           annotation: isComposition
-            ? `@OneToMany(mappedBy = "${toCamelCase(currentClass.name)}", cascade = CascadeType.ALL, orphanRemoval = true)`
-            : `@OneToMany(mappedBy = "${toCamelCase(currentClass.name)}")`,
-          mappedBy: toCamelCase(currentClass.name),
+            ? `@OneToMany(mappedBy = "${oppositeFieldName}", cascade = CascadeType.ALL, orphanRemoval = true)`
+            : `@OneToMany(mappedBy = "${oppositeFieldName}")`,
+          mappedBy: oppositeFieldName,
           cascadeAll: isComposition,
           orphanRemoval: isComposition,
           isOwner: false,
@@ -148,9 +191,9 @@ export function mapRelationsForClass(
       if (isSource) {
         const joinTableName = `${toSnakeCase(currentClass.name)}_${toSnakeCase(otherClass.name)}`;
         fields.push({
-          fieldName: `${toCamelCase(otherClass.name)}Set`,
-          targetClassName: otherClass.name,
-          targetClassFieldName: `${toCamelCase(currentClass.name)}Set`,
+          fieldName: `${fieldName}Set`,
+          targetClassName: otherClassName,
+          targetClassFieldName: `${oppositeFieldName}Set`,
           relationType: 'ManyToMany',
           annotation: `@ManyToMany\n    @JoinTable(\n        name = "${joinTableName}",\n        joinColumns = @JoinColumn(name = "${toSnakeCase(currentClass.name)}_id"),\n        inverseJoinColumns = @JoinColumn(name = "${toSnakeCase(otherClass.name)}_id")\n    )`,
           joinTableName,
@@ -158,12 +201,12 @@ export function mapRelationsForClass(
         });
       } else {
         fields.push({
-          fieldName: `${toCamelCase(otherClass.name)}Set`,
-          targetClassName: otherClass.name,
-          targetClassFieldName: `${toCamelCase(currentClass.name)}Set`,
+          fieldName: `${fieldName}Set`,
+          targetClassName: otherClassName,
+          targetClassFieldName: `${oppositeFieldName}Set`,
           relationType: 'ManyToMany',
-          annotation: `@ManyToMany(mappedBy = "${toCamelCase(currentClass.name)}Set")`,
-          mappedBy: `${toCamelCase(currentClass.name)}Set`,
+          annotation: `@ManyToMany(mappedBy = "${oppositeFieldName}Set")`,
+          mappedBy: `${oppositeFieldName}Set`,
           isOwner: false,
         });
       }

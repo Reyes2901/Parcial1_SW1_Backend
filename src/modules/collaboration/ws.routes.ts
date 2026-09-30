@@ -132,7 +132,13 @@ export async function collaborationWsRoutes(fastify: FastifyInstance): Promise<v
       getOrCreateAwarenessState(diagramId);
 
       console.log(`[ws] user joined diagram ${diagramId} (total: ${room.size})`);
-
+      // Notificar a TODOS los del room el peer count actual
+      const joinedMsg = JSON.stringify({ type: 'joined', peers: room.size });
+      for (const client of room) {
+        if (client.readyState === 1) {
+          try { client.send(joinedMsg); } catch { }
+        }
+      }
       if (room.size > 1) {
         for (const client of room) {
           if (client !== socket && client.readyState === 1) {
@@ -188,6 +194,12 @@ export async function collaborationWsRoutes(fastify: FastifyInstance): Promise<v
         const r = rooms.get(diagramId);
         if (r) {
           r.delete(socket);
+          const leftMsg = JSON.stringify({ type: 'joined', peers: r.size });
+          for (const client of r) {
+            if (client.readyState === 1) {
+              try { client.send(leftMsg); } catch { }
+            }
+          }
           const socketIds = awarenessClientIdsBySocket.get(socket);
           if (socketIds && socketIds.size > 0) {
             broadcastAwarenessRemoval(diagramId, socket, Array.from(socketIds));

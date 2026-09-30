@@ -85,7 +85,21 @@ export async function generationsRoutes(fastify: FastifyInstance): Promise<void>
       return reply.send(result);
     }
   );
-
+  // GET /generations/:id — Metadata of a generation
+  fastify.get(
+    '/generations/:id',
+    { preHandler: [authMiddleware] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const result = await service.getGenerationFiles(id);
+      return reply.send({
+        id: result.id,
+        diagramId: result.diagramId,
+        status: 'completed',
+        createdAt: result.createdAt,
+      });
+    }
+  );
   // GET /generations/:id/download — Package project into .zip and stream download
   fastify.get(
     '/generations/:id/download',

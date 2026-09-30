@@ -1,18 +1,30 @@
 spring:
-application:
-name: {{projectName}}
-datasource:
-url: jdbc:postgresql://localhost:5432/{{projectName}}_db
-username: postgres
-password: ${DB_PASSWORD:1234}
-driver-class-name: org.postgresql.Driver
-jpa:
-database-platform: org.hibernate.dialect.PostgreSQLDialect
-hibernate:
-ddl-auto: update
-show-sql: true
-properties:
-hibernate:
-format_sql: true
+  application:
+    name: {{projectName}}
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/{{dbName}}
+    username: postgres
+    password: ${DB_PASSWORD:1234}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+
 server:
-port: 8080
+  port: 8080

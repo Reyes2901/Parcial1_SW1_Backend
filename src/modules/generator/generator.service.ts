@@ -68,6 +68,7 @@ export class SpringBootGeneratorService {
     const appYmlTpl = this.loadTemplate('application.yml');
     files[`${resourcesDir}/application.yml`] = appYmlTpl({
       projectName: appName,
+      dbName: appName.replace(/-/g, '_') + '_db',
     });
 
     // 3. Application.java
@@ -90,7 +91,12 @@ export class SpringBootGeneratorService {
     const controllerTpl = this.loadTemplate('Controller.java');
     const dtoTpl = this.loadTemplate('Dto.java');
     const mapperTpl = this.loadTemplate('Mapper.java');
-
+    const openApiConfigTpl = this.loadTemplate('OpenApiConfig.java');
+    // 3.5 OpenApiConfig.java (Swagger / OpenAPI 3)
+    files[`${javaBaseDir}/config/OpenApiConfig.java`] = openApiConfigTpl({
+      packageName,
+      projectName: model.name || 'Demo',
+    });
     // Generate 4-layer structure for each class
     for (const cls of model.classes) {
       const className = toPascalCase(cls.name);
@@ -216,7 +222,7 @@ export class SpringBootGeneratorService {
       files[`${javaBaseDir}/mapper/${className}Mapper.java`] = mapperTpl(templateContext);
     }
 
-        // 5. README.md
+    // 5. README.md
     const entities = model.classes.map((cls) => {
       const tableName = toPluralSnakeCase(cls.name);
       const pluralKebabName = tableName.replace(/_/g, '-');
